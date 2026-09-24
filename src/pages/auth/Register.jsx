@@ -13,7 +13,10 @@ export default function Register() {
     phone: '',
     studentId: '',
     course: '',
-    year: ''
+    year: '',
+    department: '', 
+    gender: '',     
+    parentPhone: '' 
   })
   const [loading, setLoading] = useState(false)
   const { register } = useAuth()

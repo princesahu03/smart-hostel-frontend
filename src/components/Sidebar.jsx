@@ -3,18 +3,20 @@ import { useAuth } from'../context/AuthContext'
 import toast from 'react-hot-toast'
 
 const adminMenu = [
-  { path: '/admin', icon: '⊞',
-    label: 'Dashboard' },
-  { path: '/admin/rooms', icon: '🏠',
-    label: 'Rooms' },
-  { path: '/admin/students', icon: '👨‍🎓',
-    label: 'Students' },
-  { path: '/admin/complaints', icon: '📋',
-    label: 'Complaints' },
-  { path: '/admin/visitors', icon: '👥',
-    label: 'Visitors' },
-  { path: '/admin/notices', icon: '📢',
-    label: 'Notices' },
+  { path: '/admin',
+    icon: '⊞', label: 'Dashboard' },
+  { path: '/admin/rooms',
+    icon: '🏠', label: 'Rooms' },
+  { path: '/admin/students',
+    icon: '👨‍🎓', label: 'Students' },
+  { path: '/admin/analytics',  
+    icon: '📊', label: 'Analytics' },
+  { path: '/admin/complaints',
+    icon: '📋', label: 'Complaints' },
+  { path: '/admin/visitors',
+    icon: '👥', label: 'Visitors' },
+  { path: '/admin/notices',
+    icon: '📢', label: 'Notices' },
 ]
 
 const studentMenu = [

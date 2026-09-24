@@ -21,6 +21,7 @@ import AdminStudents from'./pages/admin/Students'
 import AdminComplaints from'./pages/admin/Complaints'
 import AdminVisitors from'./pages/admin/Visitors'
 import AdminNotices from'./pages/admin/Notices'
+import Analytics from'./pages/admin/Analytics'
 
 // Student Pages:
 import StudentDashboard from'./pages/student/Dashboard'
@@ -168,6 +169,12 @@ function AppRoutes() {
           allowedRoles={['admin']}>
           <Layout><AdminNotices /></Layout>
         </ProtectedRoute>
+      } />
+      <Route path="/admin/analytics" element={
+      <ProtectedRoute
+      allowedRoles={['admin']}>
+      <Layout><Analytics /></Layout>
+      </ProtectedRoute>
       } />
 
       {/* Student Routes */}
