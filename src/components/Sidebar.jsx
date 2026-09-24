@@ -1,7 +1,5 @@
-import { NavLink, useNavigate } from
-  'react-router-dom'
-import { useAuth } from
-  '../context/AuthContext'
+import { NavLink, useNavigate } from'react-router-dom'
+import { useAuth } from'../context/AuthContext'
 import toast from 'react-hot-toast'
 
 const adminMenu = [
@@ -28,11 +26,18 @@ const studentMenu = [
     label: 'Complaints' },
   { path: '/student/visitors', icon: '👥',
     label: 'My Visitors' },
+  { path: '/student/qr',
+  icon: '🔲', label: 'My QR' },
+
 ]
 
 const securityMenu = [
   { path: '/security', icon: '🔐',
     label: 'Visitor Gate' },
+  { path: '/security/scanner',
+  icon: '📷', label: 'QR Scanner' },
+  { path: '/security',
+  icon: '🔐', label: 'Visitor Gate' },
 ]
 
 export default function Sidebar() {

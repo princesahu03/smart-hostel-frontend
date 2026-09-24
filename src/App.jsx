@@ -5,41 +5,35 @@ import {
   Navigate
 } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
-import { AuthProvider, useAuth }
-  from './context/AuthContext'
+import { AuthProvider, useAuth }from './context/AuthContext'
 import Loader from './components/Loader'
+
+
 
 // Auth Pages:
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 
 // Admin Pages:
-import AdminDashboard from
-  './pages/admin/Dashboard'
-import AdminRooms from
-  './pages/admin/Rooms'
-import AdminStudents from
-  './pages/admin/Students'
-import AdminComplaints from
-  './pages/admin/Complaints'
-import AdminVisitors from
-  './pages/admin/Visitors'
-import AdminNotices from
-  './pages/admin/Notices'
+import AdminDashboard from'./pages/admin/Dashboard'
+import AdminRooms from'./pages/admin/Rooms'
+import AdminStudents from'./pages/admin/Students'
+import AdminComplaints from'./pages/admin/Complaints'
+import AdminVisitors from'./pages/admin/Visitors'
+import AdminNotices from'./pages/admin/Notices'
 
 // Student Pages:
-import StudentDashboard from
-  './pages/student/Dashboard'
-import MyRoom from
-  './pages/student/MyRoom'
-import MyComplaints from
-  './pages/student/MyComplaints'
-import MyVisitors from
-  './pages/student/MyVisitors'
+import StudentDashboard from'./pages/student/Dashboard'
+import MyRoom from'./pages/student/MyRoom'
+import MyComplaints from'./pages/student/MyComplaints'
+import MyVisitors from'./pages/student/MyVisitors'
+import MyQR from './pages/student/MyQR'
+
 
 // Security Pages:
-import VisitorGate from
-  './pages/security/VisitorGate'
+import VisitorGate from'./pages/security/VisitorGate'
+import QRScanner from'./pages/security/QRScanner'
+
 
 // Layout:
 import Sidebar from './components/Sidebar'
@@ -203,6 +197,12 @@ function AppRoutes() {
           <Layout><MyVisitors /></Layout>
         </ProtectedRoute>
       } />
+      <Route path="/student/qr" element={
+      <ProtectedRoute
+      allowedRoles={['student']}>
+      <Layout><MyQR /></Layout>
+    </ProtectedRoute>
+    } />
 
       {/* Security Routes */}
       <Route path="/security" element={
@@ -210,6 +210,12 @@ function AppRoutes() {
           allowedRoles={['security']}>
           <Layout><VisitorGate /></Layout>
         </ProtectedRoute>
+      } />
+      <Route path="/security/scanner" element={
+      <ProtectedRoute
+      allowedRoles={['security']}>
+      <Layout><QRScanner /></Layout>
+      </ProtectedRoute>
       } />
 
       {/* 404 */}
