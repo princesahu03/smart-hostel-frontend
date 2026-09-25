@@ -23,6 +23,7 @@ import AdminVisitors from'./pages/admin/Visitors'
 import AdminNotices from'./pages/admin/Notices'
 import Analytics from'./pages/admin/Analytics'
 import MessManagement from'./pages/admin/MessManagement'
+import FeeManagement from'./pages/admin/FeeManagement'
 
 
 // Student Pages:
@@ -32,6 +33,7 @@ import MyComplaints from'./pages/student/MyComplaints'
 import MyVisitors from'./pages/student/MyVisitors'
 import MyQR from './pages/student/MyQR'
 import MessMenu from'./pages/student/MessMenu'
+import MyFees from'./pages/student/MyFees'
 
 
 // Security Pages:
@@ -185,6 +187,13 @@ function AppRoutes() {
       <Layout><MessManagement /></Layout>
       </ProtectedRoute>
       } />
+      <Route path="/admin/fees" element={
+      <ProtectedRoute
+      allowedRoles={['admin']}>
+      <Layout><FeeManagement /></Layout>
+      </ProtectedRoute>
+      } />
+
 
       {/* Student Routes */}
       <Route path="/student" element={
@@ -223,6 +232,12 @@ function AppRoutes() {
       <ProtectedRoute
       allowedRoles={['student']}>
       <Layout><MessMenu /></Layout>
+      </ProtectedRoute>
+      } />
+      <Route path="/student/fees" element={
+      <ProtectedRoute
+      allowedRoles={['student']}>
+      <Layout><MyFees /></Layout>
       </ProtectedRoute>
       } />
 

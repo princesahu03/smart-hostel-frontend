@@ -19,6 +19,9 @@ const adminMenu = [
     icon: '📢', label: 'Notices' },
   { path: '/admin/mess',
   icon: '🍽️', label: 'Mess' },
+  { path: '/admin/fees',
+  icon: '💰', label: 'Fees' },
+
 ]
 
 const studentMenu = [
@@ -34,6 +37,8 @@ const studentMenu = [
   icon: '🔲', label: 'My QR' },
   { path: '/student/mess',
   icon: '🍽️', label: 'Mess Menu' },
+  { path: '/student/fees',
+  icon: '💰', label: 'My Fees' },
 ]
 
 const securityMenu = [
