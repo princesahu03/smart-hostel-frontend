@@ -3,16 +3,71 @@ import api from '../../api/axios'
 import toast from 'react-hot-toast'
 import Loader from '../../components/Loader'
 
+const CATEGORY_ICONS = {
+  maintenance: '🔧',
+  plumbing: '🚿',
+  internet: '📶',
+  cleanliness: '🧹',
+  mess: '🍽️',
+  security: '🔐',
+  electricity: '⚡',
+  other: '📋'
+}
+
+const STATUS_STYLES = {
+  pending: {
+    bg: '#F1F5F9',
+    color: '#64748B',
+    label: '⏳ Pending'
+  },
+  assigned: {
+    bg: '#DBEAFE',
+    color: '#2563EB',
+    label: '👤 Assigned'
+  },
+  in_progress: {
+    bg: '#FEF3C7',
+    color: '#D97706',
+    label: '🔄 In Progress'
+  },
+  resolved: {
+    bg: '#DCFCE7',
+    color: '#16A34A',
+    label: '✅ Resolved'
+  },
+  rejected: {
+    bg: '#FEE2E2',
+    color: '#DC2626',
+    label: '❌ Rejected'
+  },
+  reopened: {
+    bg: '#F3E8FF',
+    color: '#7C3AED',
+    label: '🔁 Reopened'
+  }
+}
+
 export default function MyComplaints() {
   const [complaints, setComplaints] =
     useState([])
-  const [loading, setLoading] = useState(true)
-  const [showModal, setShowModal] =
+  const [loading, setLoading] =
+    useState(true)
+  const [showForm, setShowForm] =
     useState(false)
   const [filterStatus, setFilterStatus] =
     useState('')
+  const [showConfirmModal, setShowConfirmModal] =
+    useState(false)
+  const [selectedComplaint, setSelectedComplaint] =
+    useState(null)
+  const [confirmForm, setConfirmForm] =
+    useState({
+      confirmed: true,
+      feedback: '',
+      staffRating: 0
+    })
   const [formData, setFormData] = useState({
-    category: 'maintenance',
+    category: '',
     title: '',
     description: '',
     priority: 'medium'
@@ -30,14 +85,13 @@ export default function MyComplaints() {
       const params = {}
       if (filterStatus)
         params.status = filterStatus
+
       const res = await api.get(
         '/complaints/my', { params }
       )
-      setComplaints(
-        res.data.data.complaints || []
-      )
+      setComplaints(res.data.data)
     } catch {
-      toast.error('Failed to fetch!')
+      toast.error('Failed to load!')
     } finally {
       setLoading(false)
     }
@@ -45,19 +99,29 @@ export default function MyComplaints() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (!formData.category ||
+        !formData.title ||
+        !formData.description) {
+      toast.error('Fill all required fields!')
+      return
+    }
     setSubmitting(true)
     try {
-      const data = new FormData()
-      Object.keys(formData).forEach(key => {
-        data.append(key, formData[key])
-      })
-      if (photo) data.append('photo', photo)
+      const fd = new FormData()
+      Object.keys(formData).forEach(key =>
+        fd.append(key, formData[key])
+      )
+      if (photo) fd.append('photo', photo)
 
-      await api.post('/complaints', data)
-      toast.success('Complaint raised! 📋')
-      setShowModal(false)
+      await api.post('/complaints/create', fd, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      toast.success('Complaint raised! ✅')
+      setShowForm(false)
       setFormData({
-        category: 'maintenance',
+        category: '',
         title: '',
         description: '',
         priority: 'medium'
@@ -74,52 +138,48 @@ export default function MyComplaints() {
     }
   }
 
-  const handleDelete = async (id) => {
-    if (!confirm('Delete this complaint?'))
-      return
+  const handleConfirm = async (e) => {
+    e.preventDefault()
     try {
-      await api.delete(`/complaints/${id}`)
-      toast.success('Deleted!')
+      await api.patch(
+        `/complaints/${selectedComplaint._id}/confirm`,
+        confirmForm
+      )
+      toast.success(
+        confirmForm.confirmed
+          ? 'Resolution confirmed! ✅'
+          : 'Complaint reopened!'
+      )
+      setShowConfirmModal(false)
       fetchComplaints()
-    } catch {
-      toast.error('Failed!')
+    } catch (err) {
+      toast.error(
+        err.response?.data?.message ||
+        'Failed!'
+      )
     }
   }
 
-  const getStatusStyle = (status) => {
-    switch (status) {
-      case 'pending':
-        return {
-          bg: '#FEF3C7',
-          color: '#D97706',
-          label: '⏳ Pending'
-        }
-      case 'in_progress':
-        return {
-          bg: '#DBEAFE',
-          color: '#2563EB',
-          label: '🔄 In Progress'
-        }
-      case 'resolved':
-        return {
-          bg: '#DCFCE7',
-          color: '#16A34A',
-          label: '✅ Resolved'
-        }
-      case 'rejected':
-        return {
-          bg: '#FEE2E2',
-          color: '#DC2626',
-          label: '❌ Rejected'
-        }
-      default:
-        return {
-          bg: '#F1F5F9',
-          color: '#64748B',
-          label: status
-        }
-    }
-  }
+  const StarRating = ({ value, onChange }) => (
+    <div style={{ display: 'flex', gap: '4px' }}>
+      {[1,2,3,4,5].map(star => (
+        <button
+          key={star}
+          type="button"
+          onClick={() => onChange(star)}
+          style={{
+            fontSize: '22px',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            opacity: star <= value ? 1 : 0.3
+          }}
+        >
+          ⭐
+        </button>
+      ))}
+    </div>
+  )
 
   if (loading) return (
     <Loader text="Loading complaints..." />
@@ -154,24 +214,26 @@ export default function MyComplaints() {
           </p>
         </div>
         <button
-          onClick={() => setShowModal(true)}
+          onClick={() => setShowForm(true)}
           className="btn-primary"
         >
           + Raise Complaint
         </button>
       </div>
 
-      {/* Filters */}
+      {/* Status Filters */}
       <div style={{
         display: 'flex',
         gap: '8px',
-        marginBottom: '20px',
+        marginBottom: '16px',
         flexWrap: 'wrap'
       }}>
         {[
           { value: '', label: 'All' },
           { value: 'pending',
             label: '⏳ Pending' },
+          { value: 'assigned',
+            label: '👤 Assigned' },
           { value: 'in_progress',
             label: '🔄 In Progress' },
           { value: 'resolved',
@@ -182,9 +244,9 @@ export default function MyComplaints() {
             onClick={() =>
               setFilterStatus(f.value)}
             style={{
-              padding: '8px 14px',
+              padding: '7px 14px',
               borderRadius: '10px',
-              fontSize: '13px',
+              fontSize: '12px',
               fontWeight: '600',
               cursor: 'pointer',
               background:
@@ -221,12 +283,15 @@ export default function MyComplaints() {
             fontWeight: '600',
             marginTop: '16px'
           }}>
-            No complaints!
+            No complaints yet!
           </p>
-          <p style={{ fontSize: '13px' }}>
-            Raise a complaint if you
-            have any issues
-          </p>
+          <button
+            onClick={() => setShowForm(true)}
+            className="btn-primary"
+            style={{ marginTop: '16px' }}
+          >
+            Raise First Complaint
+          </button>
         </div>
       ) : (
         <div style={{
@@ -235,145 +300,289 @@ export default function MyComplaints() {
           gap: '12px'
         }}>
           {complaints.map(c => {
-            const statusStyle =
-              getStatusStyle(c.status)
+            const statusInfo =
+              STATUS_STYLES[c.status] ||
+              STATUS_STYLES.pending
+
             return (
               <div key={c._id}
                 className="card"
-                style={{ padding: '20px' }}>
+                style={{
+                  padding: '18px 20px'
+                }}>
+                {/* Header */}
                 <div style={{
                   display: 'flex',
                   justifyContent:
                     'space-between',
                   alignItems: 'flex-start',
+                  marginBottom: '10px',
                   flexWrap: 'wrap',
-                  gap: '12px'
+                  gap: '8px'
                 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      marginBottom: '8px'
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    flexWrap: 'wrap'
+                  }}>
+                    <span style={{
+                      fontSize: '20px'
                     }}>
-                      <h3 style={{
-                        fontWeight: '700',
-                        fontSize: '16px',
-                        color: 'var(--text)'
-                      }}>
-                        {c.title}
-                      </h3>
-                      <span style={{
-                        padding: '3px 10px',
-                        borderRadius: '20px',
-                        fontSize: '11px',
-                        fontWeight: '600',
-                        background:
-                          statusStyle.bg,
-                        color: statusStyle.color
-                      }}>
-                        {statusStyle.label}
-                      </span>
-                    </div>
+                      {CATEGORY_ICONS[
+                        c.category
+                      ]}
+                    </span>
+                    <span style={{
+                      fontWeight: '700',
+                      fontSize: '15px',
+                      color: 'var(--text)'
+                    }}>
+                      {c.title}
+                    </span>
+                    <span style={{
+                      padding: '2px 10px',
+                      borderRadius: '20px',
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      background:
+                        statusInfo.bg,
+                      color: statusInfo.color
+                    }}>
+                      {statusInfo.label}
+                    </span>
+                    <span style={{
+                      padding: '2px 8px',
+                      borderRadius: '20px',
+                      fontSize: '11px',
+                      fontWeight: '600',
+                      background:
+                        c.priority === 'high'
+                          ? '#FEE2E2'
+                          : c.priority ===
+                            'medium'
+                          ? '#FEF3C7'
+                          : '#DCFCE7',
+                      color:
+                        c.priority === 'high'
+                          ? '#DC2626'
+                          : c.priority ===
+                            'medium'
+                          ? '#D97706'
+                          : '#16A34A'
+                    }}>
+                      {c.priority} priority
+                    </span>
+                  </div>
+                  <span style={{
+                    fontSize: '12px',
+                    color: 'var(--text-muted)'
+                  }}>
+                    {new Date(c.createdAt)
+                      .toLocaleDateString(
+                        'en-IN'
+                      )}
+                  </span>
+                </div>
 
+                {/* Description */}
+                <p style={{
+                  fontSize: '13px',
+                  color: 'var(--text-muted)',
+                  marginBottom: '10px',
+                  lineHeight: 1.5
+                }}>
+                  {c.description}
+                </p>
+
+                {/* Assigned Staff */}
+                {c.assignedTo && (
+                  <div style={{
+                    padding: '8px 12px',
+                    background: '#EFF6FF',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    color: '#2563EB',
+                    fontWeight: '600',
+                    marginBottom: '10px'
+                  }}>
+                    👷 Assigned to:{' '}
+                    {c.assignedTo?.name}{' '}
+                    {c.assignedTo?.phone &&
+                      `• 📞 ${c.assignedTo.phone}`}
+                  </div>
+                )}
+
+                {/* Remarks */}
+                {c.remarks && (
+                  <div style={{
+                    padding: '8px 12px',
+                    background: '#F8FAFC',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    color: 'var(--text-muted)',
+                    marginBottom: '10px'
+                  }}>
+                    💬 {c.remarks}
+                  </div>
+                )}
+
+                {/* Rejection reason */}
+                {c.rejectionReason && (
+                  <div style={{
+                    padding: '8px 12px',
+                    background: '#FEE2E2',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    color: '#DC2626',
+                    marginBottom: '10px'
+                  }}>
+                    ❌ Reason:{' '}
+                    {c.rejectionReason}
+                  </div>
+                )}
+
+                {/* Photo */}
+                {c.photo && (
+                  <a
+                    href={c.photo}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      display: 'inline-block',
+                      fontSize: '12px',
+                      color: 'var(--primary)',
+                      textDecoration: 'none',
+                      fontWeight: '600',
+                      marginBottom: '10px'
+                    }}
+                  >
+                    📷 View Photo
+                  </a>
+                )}
+
+                {/* Confirm Resolution */}
+                {c.status === 'resolved' &&
+                  c.studentConfirmed ===
+                  null && (
+                  <div style={{
+                    padding: '12px',
+                    background: '#F0FDF4',
+                    borderRadius: '10px',
+                    border: '1px solid #BBF7D0'
+                  }}>
                     <p style={{
                       fontSize: '13px',
-                      color: 'var(--text-muted)',
-                      marginBottom: '10px',
-                      lineHeight: 1.5
+                      fontWeight: '700',
+                      color: '#16A34A',
+                      marginBottom: '8px'
                     }}>
-                      {c.description}
+                      ✅ Complaint marked
+                      as resolved!
                     </p>
-
+                    <p style={{
+                      fontSize: '12px',
+                      color: '#16A34A',
+                      marginBottom: '10px'
+                    }}>
+                      Is the issue actually
+                      fixed? Please confirm!
+                    </p>
                     <div style={{
                       display: 'flex',
-                      gap: '16px',
-                      fontSize: '12px',
-                      color: 'var(--text-muted)',
-                      flexWrap: 'wrap'
+                      gap: '8px'
                     }}>
-                      <span style={{
-                        textTransform:
-                          'capitalize'
-                      }}>
-                        📁 {c.category}
-                      </span>
-                      <span style={{
-                        textTransform:
-                          'capitalize',
-                        color:
-                          c.priority === 'high'
-                            ? '#DC2626'
-                            : c.priority ===
-                              'medium'
-                            ? '#D97706'
-                            : '#16A34A'
-                      }}>
-                        🔴 {c.priority} priority
-                      </span>
-                      <span>
-                        📅{' '}
-                        {new Date(c.createdAt)
-                          .toLocaleDateString(
-                            'en-IN'
-                          )}
-                      </span>
-                      {c.photo && (
-                        <a
-                          href={c.photo}
-                          target="_blank"
-                          rel="noreferrer"
-                          style={{
-                            color:
-                              'var(--primary)',
-                            fontWeight: '600'
-                          }}
-                        >
-                          📷 View Photo
-                        </a>
-                      )}
+                      <button
+                        onClick={() => {
+                          setSelectedComplaint(c)
+                          setConfirmForm({
+                            confirmed: true,
+                            feedback: '',
+                            staffRating: 0
+                          })
+                          setShowConfirmModal(
+                            true
+                          )
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: '8px',
+                          background: '#DCFCE7',
+                          color: '#16A34A',
+                          border:
+                            '1px solid #BBF7D0',
+                          borderRadius: '8px',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          fontSize: '13px'
+                        }}
+                      >
+                        ✅ Yes, Fixed!
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedComplaint(c)
+                          setConfirmForm({
+                            confirmed: false,
+                            feedback: '',
+                            staffRating: 0
+                          })
+                          setShowConfirmModal(
+                            true
+                          )
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: '8px',
+                          background: '#FEE2E2',
+                          color: '#DC2626',
+                          border:
+                            '1px solid #FECACA',
+                          borderRadius: '8px',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          fontSize: '13px'
+                        }}
+                      >
+                        ❌ Not Fixed!
+                      </button>
                     </div>
+                  </div>
+                )}
 
-                    {/* Remarks if resolved */}
-                    {c.remarks && (
-                      <div style={{
-                        marginTop: '10px',
-                        padding: '10px 12px',
-                        background: '#F0FDF4',
-                        borderRadius: '8px',
-                        fontSize: '13px',
-                        color: '#16A34A',
-                        borderLeft:
-                          '3px solid #16A34A'
-                      }}>
-                        <strong>
-                          Staff remark:
-                        </strong>{' '}
-                        {c.remarks}
-                      </div>
+                {/* Already confirmed */}
+                {c.status === 'resolved' &&
+                  c.studentConfirmed !==
+                  null && (
+                  <div style={{
+                    padding: '8px 12px',
+                    background:
+                      c.studentConfirmed
+                        ? '#DCFCE7'
+                        : '#FEE2E2',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color:
+                      c.studentConfirmed
+                        ? '#16A34A'
+                        : '#DC2626'
+                  }}>
+                    {c.studentConfirmed
+                      ? '✅ You confirmed this resolved'
+                      : '❌ You reported not fixed'}
+                    {c.staffRating && (
+                      <span
+                        style={{
+                          marginLeft: '8px'
+                        }}>
+                        {'⭐'.repeat(
+                          c.staffRating
+                        )}
+                      </span>
                     )}
                   </div>
-
-                  {/* Delete button */}
-                  {c.status === 'pending' && (
-                    <button
-                      onClick={() =>
-                        handleDelete(c._id)}
-                      style={{
-                        padding: '6px 12px',
-                        background: '#FEE2E2',
-                        color: '#DC2626',
-                        border: 'none',
-                        borderRadius: '8px',
-                        fontSize: '12px',
-                        fontWeight: '600',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Delete
-                    </button>
-                  )}
-                </div>
+                )}
               </div>
             )
           })}
@@ -381,7 +590,7 @@ export default function MyComplaints() {
       )}
 
       {/* Raise Complaint Modal */}
-      {showModal && (
+      {showForm && (
         <div className="modal-overlay">
           <div className="modal"
             style={{
@@ -392,7 +601,7 @@ export default function MyComplaints() {
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              marginBottom: '24px'
+              marginBottom: '20px'
             }}>
               <h2 style={{
                 fontSize: '20px',
@@ -403,7 +612,7 @@ export default function MyComplaints() {
               </h2>
               <button
                 onClick={() =>
-                  setShowModal(false)}
+                  setShowForm(false)}
                 style={{
                   background: 'none',
                   border: 'none',
@@ -423,81 +632,124 @@ export default function MyComplaints() {
                 gap: '14px'
               }}>
 
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: '12px'
-              }}>
-                <div>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    marginBottom: '5px',
-                    color: 'var(--text-muted)',
-                    textTransform: 'uppercase'
-                  }}>
-                    Category *
-                  </label>
-                  <select
-                    value={formData.category}
-                    onChange={e =>
-                      setFormData({
-                        ...formData,
-                        category: e.target.value
-                      })}
-                    className="input"
-                  >
-                    {[
-                      'maintenance',
-                      'plumbing',
-                      'internet',
-                      'cleanliness',
-                      'mess',
-                      'security',
-                      'other'
-                    ].map(c => (
-                      <option key={c} value={c}>
-                        {c.charAt(0).toUpperCase()
-                          + c.slice(1)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    marginBottom: '5px',
-                    color: 'var(--text-muted)',
-                    textTransform: 'uppercase'
-                  }}>
-                    Priority
-                  </label>
-                  <select
-                    value={formData.priority}
-                    onChange={e =>
-                      setFormData({
-                        ...formData,
-                        priority: e.target.value
-                      })}
-                    className="input"
-                  >
-                    <option value="low">
-                      🟢 Low
-                    </option>
-                    <option value="medium">
-                      🟡 Medium
-                    </option>
-                    <option value="high">
-                      🔴 High
-                    </option>
-                  </select>
+              {/* Category */}
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  marginBottom: '8px',
+                  color: 'var(--text-muted)',
+                  textTransform: 'uppercase'
+                }}>
+                  Category *
+                </label>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns:
+                    'repeat(4, 1fr)',
+                  gap: '6px'
+                }}>
+                  {Object.keys(CATEGORY_ICONS)
+                    .map(cat => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() =>
+                        setFormData({
+                          ...formData,
+                          category: cat
+                        })}
+                      style={{
+                        padding: '8px 4px',
+                        borderRadius: '8px',
+                        fontSize: '11px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        background:
+                          formData.category
+                            === cat
+                            ? 'var(--primary)'
+                            : '#F1F5F9',
+                        color:
+                          formData.category
+                            === cat
+                            ? 'white'
+                            : 'var(--text-muted)',
+                        border: 'none',
+                        textTransform:
+                          'capitalize'
+                      }}
+                    >
+                      {CATEGORY_ICONS[cat]}
+                      {' '}{cat}
+                    </button>
+                  ))}
                 </div>
               </div>
 
+              {/* Priority */}
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  marginBottom: '8px',
+                  color: 'var(--text-muted)',
+                  textTransform: 'uppercase'
+                }}>
+                  Priority *
+                </label>
+                <div style={{
+                  display: 'flex',
+                  gap: '8px'
+                }}>
+                  {[
+                    { value: 'low',
+                      label: '🟢 Low',
+                      color: '#16A34A' },
+                    { value: 'medium',
+                      label: '🟡 Medium',
+                      color: '#D97706' },
+                    { value: 'high',
+                      label: '🔴 High',
+                      color: '#DC2626' },
+                  ].map(p => (
+                    <button
+                      key={p.value}
+                      type="button"
+                      onClick={() =>
+                        setFormData({
+                          ...formData,
+                          priority: p.value
+                        })}
+                      style={{
+                        flex: 1,
+                        padding: '8px',
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        background:
+                          formData.priority
+                            === p.value
+                            ? p.color
+                            : '#F1F5F9',
+                        color:
+                          formData.priority
+                            === p.value
+                            ? 'white'
+                            : 'var(--text-muted)',
+                        border: 'none'
+                      }}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Title */}
               <div>
                 <label style={{
                   display: 'block',
@@ -517,12 +769,13 @@ export default function MyComplaints() {
                       ...formData,
                       title: e.target.value
                     })}
-                  placeholder="Brief title..."
+                  placeholder="e.g. Fan not working in Room 101"
                   required
                   className="input"
                 />
               </div>
 
+              {/* Description */}
               <div>
                 <label style={{
                   display: 'block',
@@ -539,12 +792,11 @@ export default function MyComplaints() {
                   onChange={e =>
                     setFormData({
                       ...formData,
-                      description:
-                        e.target.value
+                      description: e.target.value
                     })}
-                  placeholder="Describe the issue..."
+                  placeholder="Describe the issue in detail..."
+                  rows={4}
                   required
-                  rows={3}
                   className="input"
                   style={{
                     resize: 'none',
@@ -553,6 +805,7 @@ export default function MyComplaints() {
                 />
               </div>
 
+              {/* Photo Upload */}
               <div>
                 <label style={{
                   display: 'block',
@@ -562,38 +815,47 @@ export default function MyComplaints() {
                   color: 'var(--text-muted)',
                   textTransform: 'uppercase'
                 }}>
-                  Photo (Optional — AWS S3)
+                  Photo Evidence (Optional)
                 </label>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={e =>
-                    setPhoto(
-                      e.target.files[0]
-                    )}
+                    setPhoto(e.target.files[0])}
                   className="input"
                   style={{ padding: '8px' }}
                 />
                 {photo && (
                   <p style={{
-                    fontSize: '12px',
-                    color: '#10b981',
+                    fontSize: '11px',
+                    color: '#16A34A',
                     marginTop: '4px'
                   }}>
-                    ✅ {photo.name} selected
+                    ✅ {photo.name}
                   </p>
                 )}
               </div>
 
               <div style={{
+                background: '#EFF6FF',
+                borderRadius: '10px',
+                padding: '10px',
+                fontSize: '12px',
+                color: 'var(--primary)'
+              }}>
+                💡 Your complaint will be
+                automatically assigned to
+                the appropriate staff!
+              </div>
+
+              <div style={{
                 display: 'flex',
-                gap: '10px',
-                marginTop: '4px'
+                gap: '10px'
               }}>
                 <button
                   type="button"
                   onClick={() =>
-                    setShowModal(false)}
+                    setShowForm(false)}
                   style={{
                     flex: 1,
                     padding: '12px',
@@ -621,6 +883,164 @@ export default function MyComplaints() {
                   {submitting
                     ? '⏳ Submitting...'
                     : '📋 Raise Complaint'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Resolution Modal */}
+      {showConfirmModal &&
+        selectedComplaint && (
+        <div className="modal-overlay">
+          <div className="modal"
+            style={{
+              maxWidth: '400px',
+              padding: '28px'
+            }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '20px'
+            }}>
+              <h2 style={{
+                fontSize: '18px',
+                fontWeight: '700',
+                fontFamily: 'Space Grotesk'
+              }}>
+                {confirmForm.confirmed
+                  ? '✅ Confirm Resolution'
+                  : '❌ Report Not Fixed'}
+              </h2>
+              <button
+                onClick={() =>
+                  setShowConfirmModal(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  color: 'var(--text-muted)'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirm}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '14px'
+              }}>
+
+              {/* Rate staff (if confirming) */}
+              {confirmForm.confirmed && (
+                <div>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    marginBottom: '8px',
+                    color: 'var(--text-muted)',
+                    textTransform: 'uppercase'
+                  }}>
+                    Rate the Staff Work
+                  </label>
+                  <StarRating
+                    value={
+                      confirmForm.staffRating
+                    }
+                    onChange={val =>
+                      setConfirmForm({
+                        ...confirmForm,
+                        staffRating: val
+                      })}
+                  />
+                </div>
+              )}
+
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  marginBottom: '5px',
+                  color: 'var(--text-muted)',
+                  textTransform: 'uppercase'
+                }}>
+                  {confirmForm.confirmed
+                    ? 'Feedback (Optional)'
+                    : 'What is Still Wrong? *'}
+                </label>
+                <textarea
+                  value={confirmForm.feedback}
+                  onChange={e =>
+                    setConfirmForm({
+                      ...confirmForm,
+                      feedback: e.target.value
+                    })}
+                  placeholder={
+                    confirmForm.confirmed
+                      ? 'Any feedback for staff?'
+                      : 'Describe what is still not fixed...'
+                  }
+                  rows={3}
+                  required={
+                    !confirmForm.confirmed
+                  }
+                  className="input"
+                  style={{
+                    resize: 'none',
+                    fontFamily: 'Inter'
+                  }}
+                />
+              </div>
+
+              <div style={{
+                display: 'flex',
+                gap: '10px'
+              }}>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowConfirmModal(false)}
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    border:
+                      '1.5px solid var(--border)',
+                    borderRadius: '12px',
+                    background: 'white',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    color: 'var(--text-muted)'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{
+                    flex: 2,
+                    padding: '12px',
+                    background:
+                      confirmForm.confirmed
+                        ? '#10B981'
+                        : '#DC2626',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    fontWeight: '700',
+                    fontSize: '14px'
+                  }}
+                >
+                  {confirmForm.confirmed
+                    ? '✅ Confirm Fixed!'
+                    : '❌ Report Not Fixed'}
                 </button>
               </div>
             </form>
