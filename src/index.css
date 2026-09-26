@@ -173,3 +173,11 @@ h1, h2, h3, h4 {
       1fr !important;
   }
 }
+
+/* Messages responsive */
+@media (max-width: 768px) {
+  .messages-grid {
+    grid-template-columns: 1fr !important;
+    height: auto !important;
+  }
+}

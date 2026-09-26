@@ -24,6 +24,7 @@ import AdminNotices from'./pages/admin/Notices'
 import Analytics from'./pages/admin/Analytics'
 import MessManagement from'./pages/admin/MessManagement'
 import FeeManagement from'./pages/admin/FeeManagement'
+import Messages from './pages/Messages'
 
 
 // Student Pages:
@@ -191,6 +192,15 @@ function AppRoutes() {
       <ProtectedRoute
       allowedRoles={['admin']}>
       <Layout><FeeManagement /></Layout>
+      </ProtectedRoute>
+      } />
+      <Route path="/messages" element={
+      <ProtectedRoute
+      allowedRoles={[
+      'admin', 'student',
+      'staff', 'security'
+      ]}>
+      <Layout><Messages /></Layout>
       </ProtectedRoute>
       } />
 

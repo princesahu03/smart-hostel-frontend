@@ -21,7 +21,8 @@ const adminMenu = [
   icon: '🍽️', label: 'Mess' },
   { path: '/admin/fees',
   icon: '💰', label: 'Fees' },
-
+  { path: '/messages',
+  icon: '💬', label: 'Messages' },
 ]
 
 const studentMenu = [
@@ -39,6 +40,9 @@ const studentMenu = [
   icon: '🍽️', label: 'Mess Menu' },
   { path: '/student/fees',
   icon: '💰', label: 'My Fees' },
+  { path: '/messages',
+  icon: '💬', label: 'Messages' },
+
 ]
 
 const securityMenu = [
@@ -48,7 +52,53 @@ const securityMenu = [
   icon: '📷', label: 'QR Scanner' },
   { path: '/security',
   icon: '🔐', label: 'Visitor Gate' },
+  { path: '/messages',
+  icon: '💬', label: 'Messages' },
 ]
+
+const staffMenu = [
+  { path: '/messages',
+  icon: '💬', label: 'Messages' },
+]
+// Sidebar.jsx mein:
+const [unreadCount, setUnreadCount] =
+  useState(0)
+
+useEffect(() => {
+  const fetchUnread = async () => {
+    try {
+      const res = await api.get(
+        '/messages/unread'
+      )
+      setUnreadCount(
+        res.data.data.count || 0
+      )
+    } catch {}
+  }
+  fetchUnread()
+
+  // Poll every 30 seconds:
+  const interval = setInterval(
+    fetchUnread, 30000
+  )
+  return () => clearInterval(interval)
+}, [])
+
+// Menu item mein:
+{item.path === '/messages' &&
+  unreadCount > 0 && (
+  <span style={{
+    background: '#DC2626',
+    color: 'white',
+    borderRadius: '20px',
+    padding: '1px 6px',
+    fontSize: '10px',
+    fontWeight: '800',
+    marginLeft: 'auto'
+  }}>
+    {unreadCount}
+  </span>
+)}
 
 export default function Sidebar() {
   const { user, logout } = useAuth()
