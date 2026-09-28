@@ -23,6 +23,10 @@ const adminMenu = [
   icon: '💰', label: 'Fees' },
   { path: '/messages',
   icon: '💬', label: 'Messages' },
+  { path: '/admin/curfew',
+  icon: '🌙', label: 'Curfew' },
+  { path: '/admin/room-requests',
+  icon: '🔄', label: 'Room Requests' },
 ]
 
 const studentMenu = [
@@ -42,7 +46,10 @@ const studentMenu = [
   icon: '💰', label: 'My Fees' },
   { path: '/messages',
   icon: '💬', label: 'Messages' },
-
+  { path: '/student/curfew',
+  icon: '🌙', label: 'Curfew Status' },
+  { path: '/student/room-service',
+  icon: '🔄', label: 'Room Service' },
 ]
 
 const securityMenu = [

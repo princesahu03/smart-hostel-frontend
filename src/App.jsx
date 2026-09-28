@@ -25,6 +25,8 @@ import Analytics from'./pages/admin/Analytics'
 import MessManagement from'./pages/admin/MessManagement'
 import FeeManagement from'./pages/admin/FeeManagement'
 import Messages from './pages/Messages'
+import CurfewManagement from'./pages/admin/CurfewManagement'
+import RoomRequests from'./pages/admin/RoomRequests'
 
 
 // Student Pages:
@@ -35,6 +37,8 @@ import MyVisitors from'./pages/student/MyVisitors'
 import MyQR from './pages/student/MyQR'
 import MessMenu from'./pages/student/MessMenu'
 import MyFees from'./pages/student/MyFees'
+import MyCurfew from'./pages/student/MyCurfew'
+import RoomService from'./pages/student/RoomService'
 
 
 // Security Pages:
@@ -203,7 +207,20 @@ function AppRoutes() {
       <Layout><Messages /></Layout>
       </ProtectedRoute>
       } />
-
+      <Route path="/admin/curfew" element={
+      <ProtectedRoute
+      allowedRoles={['admin']}>
+      <Layout>
+      <CurfewManagement />
+      </Layout>
+      </ProtectedRoute>
+      } />
+      <Route path="/admin/room-requests" element={
+  <ProtectedRoute
+    allowedRoles={['admin']}>
+    <Layout><RoomRequests /></Layout>
+  </ProtectedRoute>
+} />
 
       {/* Student Routes */}
       <Route path="/student" element={
@@ -250,8 +267,18 @@ function AppRoutes() {
       <Layout><MyFees /></Layout>
       </ProtectedRoute>
       } />
-
-
+      <Route path="/student/curfew" element={
+      <ProtectedRoute
+      allowedRoles={['student']}>
+      <Layout><MyCurfew /></Layout>
+      </ProtectedRoute>
+      } />
+      <Route path="/student/room-service" element={
+  <ProtectedRoute
+    allowedRoles={['student']}>
+    <Layout><RoomService /></Layout>
+  </ProtectedRoute>
+} />
       {/* Security Routes */}
       <Route path="/security" element={
         <ProtectedRoute
