@@ -634,7 +634,7 @@ export default function AdminComplaints() {
                         alignItems: 'flex-end'
                       }}>
                         {c.photo && (
-                          
+                          <a
                             href={c.photo}
                             target="_blank"
                             rel="noreferrer"
