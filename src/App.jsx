@@ -44,6 +44,12 @@ import RoomService from'./pages/student/RoomService'
 // Security Pages:
 import VisitorGate from'./pages/security/VisitorGate'
 import QRScanner from'./pages/security/QRScanner'
+import StaffDashboard from'./pages/staff/StaffDashboard'
+import StaffComplaints from'./pages/staff/StaffComplaints'
+import TeacherDashboard from'./pages/teacher/TeacherDashboard'
+import FloorManagement from'./pages/teacher/FloorManagement'
+import TeacherProfile from'./pages/teacher/TeacherProfile'
+import WardenManagement from'./pages/admin/WardenManagement'
 
 
 // Layout:
@@ -292,6 +298,46 @@ function AppRoutes() {
       <Layout><QRScanner /></Layout>
       </ProtectedRoute>
       } />
+      <Route path="/staff" element={
+  <ProtectedRoute
+    allowedRoles={['staff']}>
+    <Layout><StaffDashboard /></Layout>
+  </ProtectedRoute>
+} />
+
+<Route path="/staff/complaints" element={
+  <ProtectedRoute
+    allowedRoles={['staff']}>
+    <Layout><StaffComplaints /></Layout>
+  </ProtectedRoute>
+} />
+<Route path="/teacher" element={
+  <ProtectedRoute
+    allowedRoles={['teacher']}>
+    <Layout><TeacherDashboard /></Layout>
+  </ProtectedRoute>
+} />
+
+<Route path="/teacher/floor" element={
+  <ProtectedRoute
+    allowedRoles={['teacher']}>
+    <Layout><FloorManagement /></Layout>
+  </ProtectedRoute>
+} />
+
+<Route path="/teacher/profile" element={
+  <ProtectedRoute
+    allowedRoles={['teacher']}>
+    <Layout><TeacherProfile /></Layout>
+  </ProtectedRoute>
+} />
+
+<Route path="/admin/wardens" element={
+  <ProtectedRoute
+    allowedRoles={['admin']}>
+    <Layout><WardenManagement /></Layout>
+  </ProtectedRoute>
+} />
 
       {/* 404 */}
       <Route path="/{*path}" element={
