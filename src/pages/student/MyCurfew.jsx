@@ -12,6 +12,7 @@ export default function MyCurfew() {
     useState(null)
   const [loading, setLoading] =
     useState(true)
+  const [total, setTotal] = useState(0)
 
   useEffect(() => {
     fetchData()
@@ -24,12 +25,19 @@ export default function MyCurfew() {
           api.get('/curfew/my-violations'),
           api.get('/curfew/settings')
         ])
+
       setViolations(
-        violationsRes.data.data.violations
+        violationsRes.data.data
+          .violations || []
+      )
+      setTotal(
+        violationsRes.data.data.total || 0
       )
       setSettings(settingsRes.data.data)
-    } catch {}
-    finally {
+    } catch (err) {
+      console.error('Curfew fetch error:',
+        err)
+    } finally {
       setLoading(false)
     }
   }
@@ -37,10 +45,6 @@ export default function MyCurfew() {
   if (loading) return (
     <Loader text="Loading curfew info..." />
   )
-
-  const totalViolations =
-    violationsRes?.data?.data?.total ||
-    violations.length
 
   return (
     <div>
@@ -64,7 +68,7 @@ export default function MyCurfew() {
       </div>
 
       {/* Curfew Times */}
-      {settings && (
+      {settings ? (
         <div style={{
           background:
             'linear-gradient(135deg, #1a3c5e, #2d5f8a)',
@@ -105,7 +109,8 @@ export default function MyCurfew() {
                 fontWeight: '800',
                 fontFamily: 'Space Grotesk'
               }}>
-                {settings.weekdayTime}
+                {settings.weekdayTime
+                  || '22:00'}
               </div>
             </div>
             <div style={{
@@ -127,7 +132,8 @@ export default function MyCurfew() {
                 fontWeight: '800',
                 fontFamily: 'Space Grotesk'
               }}>
-                {settings.weekendTime}
+                {settings.weekendTime
+                  || '23:00'}
               </div>
             </div>
           </div>
@@ -138,13 +144,27 @@ export default function MyCurfew() {
             textAlign: 'center'
           }}>
             ⏱️ Grace period:{' '}
-            {settings.gracePeriod} minutes
-            after curfew time
+            {settings.gracePeriod || 15}{' '}
+            minutes after curfew time
           </div>
+        </div>
+      ) : (
+        <div style={{
+          background: '#FEF3C7',
+          borderRadius: '12px',
+          padding: '16px',
+          marginBottom: '20px',
+          fontSize: '13px',
+          color: '#92400E',
+          fontWeight: '600',
+          textAlign: 'center'
+        }}>
+          ⚙️ Curfew not configured yet.
+          Contact admin!
         </div>
       )}
 
-      {/* Violation Count */}
+      {/* Stats Cards */}
       <div style={{
         display: 'grid',
         gridTemplateColumns:
@@ -153,32 +173,35 @@ export default function MyCurfew() {
         marginBottom: '20px'
       }}
         className="grid-3">
+
+        {/* Total Violations */}
         <div className="card"
           style={{
             padding: '16px',
             textAlign: 'center',
             background:
-              user?.curfewViolations >= 3
+              (user?.curfewViolations || 0)
+                >= 3
                 ? '#FFF5F5' : 'white',
             border:
-              user?.curfewViolations >= 3
+              (user?.curfewViolations || 0)
+                >= 3
                 ? '1px solid #FECACA'
                 : '1px solid var(--border)'
           }}>
           <div style={{ fontSize: '28px' }}>
-            {user?.curfewViolations >= 5
-              ? '🚨'
-              : user?.curfewViolations >= 3
-              ? '⚠️'
-              : '✅'}
+            {(user?.curfewViolations || 0)
+              >= 5 ? '🚨'
+              : (user?.curfewViolations || 0)
+              >= 3 ? '⚠️' : '✅'}
           </div>
           <div style={{
             fontSize: '28px',
             fontWeight: '800',
             color:
-              user?.curfewViolations >= 3
-                ? '#DC2626'
-                : '#16A34A',
+              (user?.curfewViolations || 0)
+                >= 3
+                ? '#DC2626' : '#16A34A',
             fontFamily: 'Space Grotesk',
             marginTop: '6px'
           }}>
@@ -193,6 +216,7 @@ export default function MyCurfew() {
           </div>
         </div>
 
+        {/* Pending Review */}
         <div className="card"
           style={{
             padding: '16px',
@@ -221,6 +245,7 @@ export default function MyCurfew() {
           </div>
         </div>
 
+        {/* Current Status */}
         <div className="card"
           style={{
             padding: '16px',
@@ -234,14 +259,12 @@ export default function MyCurfew() {
             fontWeight: '800',
             color:
               user?.currentStatus === 'inside'
-                ? '#16A34A'
-                : '#DC2626',
+                ? '#16A34A' : '#DC2626',
             fontFamily: 'Space Grotesk',
             marginTop: '6px'
           }}>
             {user?.currentStatus === 'inside'
-              ? 'IN'
-              : 'OUT'}
+              ? 'IN' : 'OUT'}
           </div>
           <div style={{
             fontSize: '12px',
@@ -253,8 +276,9 @@ export default function MyCurfew() {
         </div>
       </div>
 
-      {/* Alert if many violations */}
-      {(user?.curfewViolations || 0) >= 3 && (
+      {/* Warning Alert */}
+      {(user?.curfewViolations || 0)
+        >= 3 && (
         <div style={{
           background: '#FEE2E2',
           border: '1px solid #FECACA',
@@ -280,20 +304,53 @@ export default function MyCurfew() {
             curfew violations. Further
             violations may result in
             disciplinary action and
-            parent notification.
-            Please return before curfew!
+            parent notification. Please
+            return before curfew time!
           </p>
         </div>
       )}
 
-      {/* Violation List */}
+      {/* Rules Card */}
+      <div className="card"
+        style={{
+          padding: '16px',
+          marginBottom: '20px',
+          background: '#F0FDF4',
+          border: '1px solid #BBF7D0'
+        }}>
+        <h3 style={{
+          fontSize: '14px',
+          fontWeight: '700',
+          color: '#16A34A',
+          marginBottom: '10px'
+        }}>
+          📋 Curfew Rules
+        </h3>
+        {[
+          '⏰ Return before curfew time daily',
+          '⚡ 3 violations = Warning notice',
+          '📱 5 violations = Parent notified',
+          '🔐 Always carry your QR code',
+          '✅ Scan QR at gate on entry/exit',
+        ].map((rule, i) => (
+          <p key={i} style={{
+            fontSize: '12px',
+            color: '#166534',
+            marginBottom: '4px'
+          }}>
+            {rule}
+          </p>
+        ))}
+      </div>
+
+      {/* Violations List */}
       <h2 style={{
         fontSize: '16px',
         fontWeight: '700',
         color: 'var(--text)',
         marginBottom: '12px'
       }}>
-        📋 My Violations
+        📋 My Violations ({total})
       </h2>
 
       {violations.length === 0 ? (
@@ -302,13 +359,14 @@ export default function MyCurfew() {
           padding: '60px',
           color: 'var(--text-muted)'
         }}>
-          <div style={{ fontSize: '48px' }}>
+          <div style={{ fontSize: '56px' }}>
             🌟
           </div>
           <p style={{
             fontSize: '16px',
             fontWeight: '600',
-            marginTop: '12px'
+            marginTop: '16px',
+            color: 'var(--text)'
           }}>
             No violations! Great job! 🎉
           </p>
@@ -316,7 +374,7 @@ export default function MyCurfew() {
             fontSize: '13px',
             marginTop: '6px'
           }}>
-            Keep returning before curfew!
+            Keep returning before curfew time!
           </p>
         </div>
       ) : (
@@ -326,17 +384,19 @@ export default function MyCurfew() {
           gap: '8px'
         }}>
           {violations.map((v, i) => (
-            <div key={v._id} className="card"
+            <div key={v._id || i}
+              className="card"
               style={{
                 padding: '14px 16px',
-                borderLeft:
-                  `4px solid ${
-                    v.status === 'excused'
-                      ? '#16A34A'
-                      : v.status === 'actioned'
-                      ? '#7C3AED'
-                      : '#DC2626'
-                  }`
+                borderLeft: `4px solid ${
+                  v.status === 'excused'
+                    ? '#16A34A'
+                    : v.status === 'actioned'
+                    ? '#7C3AED'
+                    : v.status === 'warned'
+                    ? '#2563EB'
+                    : '#DC2626'
+                }`
               }}>
               <div style={{
                 display: 'flex',
@@ -402,6 +462,7 @@ export default function MyCurfew() {
                         : '✓ Excused'}
                     </span>
                   </div>
+
                   <p style={{
                     fontSize: '12px',
                     color: 'var(--text-muted)'
@@ -415,9 +476,19 @@ export default function MyCurfew() {
                         hour: '2-digit',
                         minute: '2-digit'
                       })}
-                    {' • '}Curfew was:{' '}
-                    {v.curfewTime}
                   </p>
+                  <p style={{
+                    fontSize: '12px',
+                    color: 'var(--text-muted)',
+                    marginTop: '2px'
+                  }}>
+                    Curfew was:{' '}
+                    {v.curfewTime} •{' '}
+                    {v.dayType === 'weekend'
+                      ? '🎉 Weekend'
+                      : '📅 Weekday'}
+                  </p>
+
                   {v.actionTaken && (
                     <p style={{
                       fontSize: '12px',
@@ -428,6 +499,39 @@ export default function MyCurfew() {
                       🎯 {v.actionTaken}
                     </p>
                   )}
+
+                  {v.remarks && (
+                    <p style={{
+                      fontSize: '12px',
+                      color: 'var(--text-muted)',
+                      marginTop: '4px',
+                      fontStyle: 'italic'
+                    }}>
+                      💬 {v.remarks}
+                    </p>
+                  )}
+                </div>
+
+                {/* Warning Level */}
+                <div style={{
+                  textAlign: 'center'
+                }}>
+                  <div style={{
+                    fontSize: '20px'
+                  }}>
+                    {v.warningLevel === 1
+                      ? '⚠️'
+                      : v.warningLevel === 2
+                      ? '🔴'
+                      : '🚨'}
+                  </div>
+                  <div style={{
+                    fontSize: '10px',
+                    color: 'var(--text-muted)',
+                    marginTop: '2px'
+                  }}>
+                    Level {v.warningLevel}
+                  </div>
                 </div>
               </div>
             </div>
